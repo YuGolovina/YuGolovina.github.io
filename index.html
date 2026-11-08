@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Web-протоколы передачи пространственных данных — Головина Ю. А.</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root{--deep:#254b36;--teal:#43845a;--pale:#edf5e9;--blue:#d7e8c5;--ink:#263c2d;--white:#fff}
+*{box-sizing:border-box}html,body{margin:0;height:100%;font-family:Trebuchet MS, Verdana, sans-serif;color:var(--ink)}body{display:flex;flex-direction:column;background:#f8fbf5}
+header{background:var(--deep);color:white;padding:16px 25px;box-shadow:0 2px 9px #0002}h1{font-size:22px;font-weight:600;margin:0}main{flex:1;min-height:0;display:flex}#menu{width:290px;flex-shrink:0;background:var(--pale);padding:23px 18px;overflow:auto;border-right:1px solid #c8dec5}h2{font-size:21px;margin:0 0 22px}h3{font-size:16px;margin:25px 0 12px;color:var(--deep)}.note{padding:13px;background:white;border-left:4px solid var(--teal);font-size:14px;line-height:1.5;border-radius:5px;margin-bottom:15px}button{width:100%;background:var(--teal);color:white;border:0;border-radius:6px;padding:11px 10px;cursor:pointer;margin:5px 0;font-size:13px}button:hover{background:#2f6843}input[type=text]{width:100%;border:1px solid #b2d0ad;border-radius:6px;padding:11px 9px;font-size:13px;background:#fff}#map{flex:1;min-width:0;min-height:350px}.status{font-size:12px;line-height:1.5;color:#58725b;margin-top:12px}footer{background:var(--deep);color:white;text-align:right;padding:13px 24px;font-size:13px}.leaflet-popup-content{line-height:1.45}@media(max-width:700px){main{flex-direction:column}#menu{width:100%;max-height:42vh;border-right:0;border-bottom:1px solid #c8dec5;padding:14px}h2{margin-bottom:10px}h3{margin:12px 0 8px}header{padding:13px}h1{font-size:18px}#map{min-height:45vh}footer{text-align:center}}
+</style>
+</head>
+<body>
+<header><h1>Web-протоколы передачи пространственных данных</h1></header>
+<main>
+<aside id="menu"><h2>Меню</h2><div class="note">В этом задании отправляем запрос в геокодер, обрабатываем ответ и отображаем пространственные данные на карте.</div>
+<button id="elem">Убрать слой границ</button><button id="elem2">Добавить слой границ</button>
+<h3>Геокодирование</h3><input id="geocode_text" type="text" value="Москва, Гороховский переулок, 4" aria-label="Адрес для поиска"><button id="geocode">Выполнить запрос</button>
+<div id="status" class="status" role="status">Загрузка границ Москвы… Нажмите на карту, чтобы увидеть координаты.</div></aside>
+<div id="map" aria-label="Интерактивная карта"></div>
+</main>
+<footer>© Головина Юлия Алексеевна, 2026</footer>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+'use strict';
+const map=L.map('map').setView([55.753,37.619],11);
+const osm=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}).addTo(map);
+// Спутниковая подложка; требует доступа к сервису Esri.
+const sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Tiles &copy; Esri, Maxar, Earthstar Geographics'});
+const myStyle={color:'#43845a',weight:3,opacity:.75,fillColor:'#b7dc9d',fillOpacity:.32};
+function onEachFeature(feature,layer){const p=feature.properties||{};const name=String(p.NAME||'Объект');const okato=String(p.OKATO||'не указан');const div=document.createElement('div');const h=document.createElement('h3');h.textContent=name;const para=document.createElement('p');para.textContent='ОКАТО: '+okato;div.append(h,para);layer.bindPopup(div);}
+const MosBound=L.geoJSON(null,{style:myStyle,onEachFeature});
+const baseMaps={'Карта':osm,'Спутник':sat};const overlayMaps={'Москва':MosBound};
+L.control.layers(baseMaps,overlayMaps).addTo(map);
+const status=document.getElementById('status');
+const setStatus=s=>{status.textContent=s;};
+document.getElementById('elem').onclick=()=>map.removeLayer(MosBound);
+document.getElementById('elem2').onclick=()=>{if(MosBound.getLayers().length){MosBound.addTo(map);}else{setStatus('Границы пока не загрузились. Проверьте интернет.');loadMoscowBoundaries();}};
+const popup=L.popup();map.on('click',e=>popup.setLatLng(e.latlng).setContent('Координаты клика: '+e.latlng.lat.toFixed(6)+', '+e.latlng.lng.toFixed(6)).openOn(map));
+// Индивидуальный маркер-листочек для варианта Юлии.
+// Иконка встроена в HTML, поэтому отдельные PNG-файлы не нужны.
+const leafSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="46" height="90" viewBox="0 0 46 90"><defs><linearGradient id="leafShade" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#c4e98e"/><stop offset="0.55" stop-color="#65b56b"/><stop offset="1" stop-color="#287c50"/></linearGradient></defs><path d="M22 86 Q23 62 24 46" fill="none" stroke="#4a6644" stroke-width="3" stroke-linecap="round"/><path d="M24 52 C8 51 4 37 9 23 C14 10 28 6 38 4 C41 17 41 31 34 42 C31 47 27 50 24 52Z" fill="url(#leafShade)" stroke="#287e4b" stroke-width="1.6"/><path d="M24 49 Q29 27 37 9 M26 39 L13 29 M29 29 L37 25" stroke="#e0f3bb" stroke-width="1.6" stroke-linecap="round" fill="none"/></svg>`;
+const leafIcon = L.icon({iconUrl:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(leafSvg),iconSize:[46,90],iconAnchor:[23,89],popupAnchor:[0,-68]});
+let searchMarker=null;
+async function geocode(){const q=document.getElementById('geocode_text').value.trim();if(!q){setStatus('Введите адрес для поиска.');return;}setStatus('Поиск адреса…');try{const url='https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(q);const response=await fetch(url,{headers:{'Accept':'application/json'}});if(!response.ok)throw new Error('HTTP '+response.status);const json=await response.json();if(!json.length){setStatus('По запросу ничего не найдено.');return;}const result=json[0];const bounds=result.boundingbox.map(Number);map.flyToBounds([[bounds[0],bounds[2]],[bounds[1],bounds[3]]],{maxZoom:17});if(searchMarker)map.removeLayer(searchMarker);searchMarker=L.marker([Number(result.lat),Number(result.lon)],{icon:leafIcon}).addTo(map).bindPopup(String(result.display_name||q)).openPopup();setStatus('Найдено: '+result.display_name);}catch(err){setStatus('Не удалось выполнить запрос. Проверьте интернет и попробуйте позже.');console.error(err);}}
+document.getElementById('geocode').onclick=geocode;document.getElementById('geocode_text').addEventListener('keydown',e=>{if(e.key==='Enter')geocode();});
+// Границы районов Москвы загружаются из открытого набора геоданных.
+// При открытии локального HTML доступен HTTPS-запрос к публичному GitHub.
+async function loadMoscowBoundaries(){
+  const sources=[
+    'https://raw.githubusercontent.com/karen07/moscow-geo/main/geojson/moscow-districts.geojson',
+    'https://cdn.jsdelivr.net/gh/karen07/moscow-geo@main/geojson/moscow-districts.geojson',
+    'https://raw.githubusercontent.com/karen07/moscow-geo/main/geojson/districts-in-mkad.geojson'
+  ];
+  for(const url of sources){
+    try{
+      const response=await fetch(url);
+      if(!response.ok)throw new Error('HTTP '+response.status);
+      const data=await response.json();
+      if(data.type!=='FeatureCollection'||!Array.isArray(data.features))throw new Error('Неверный GeoJSON');
+      // В исходном наборе вместе с полигонами встречаются точки; показываем районы.
+      const polygons=data.features.filter(f=>f.geometry&&['Polygon','MultiPolygon'].includes(f.geometry.type));
+      if(!polygons.length)throw new Error('Нет полигонов');
+      MosBound.clearLayers();
+      MosBound.addData({type:'FeatureCollection',features:polygons}).addTo(map);
+      setStatus('Границы Москвы загружены ('+polygons.length+' объектов). Можно управлять слоями и искать адреса.');
+      return;
+    }catch(error){console.warn('Источник границ недоступен:',url,error);}
+  }
+  setStatus('Не удалось загрузить границы Москвы. Проверьте подключение к интернету и обновите страницу.');
+}
+loadMoscowBoundaries();
+</script>
+</body></html>
